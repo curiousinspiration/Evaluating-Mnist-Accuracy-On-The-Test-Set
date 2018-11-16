@@ -127,11 +127,11 @@ bool MNISTDataloader::DataAt(
     }
 
     a_outInput = Tensor::Zeros({1, m_imageWidth*m_imageHeight})->ToMutable();
-    a_outOutput = Tensor::Zeros({1, 1})->ToMutable();
+    a_outOutput = Tensor::Zeros({1, 10})->ToMutable();
 
-    float l_class = (float)l_label;
+    size_t l_class = (size_t)l_label;
 
-    a_outOutput->SetAt({0, 0}, l_class);
+    a_outOutput->SetAt({0, l_class}, 1.0);
 
     for (size_t i = 0; i < m_imageHeight; ++i)
     {

@@ -7,7 +7,7 @@
 #include "neural/data/mnist_dataloader.h"
 #include "neural/layers/linear_layer.h"
 #include "neural/layers/relu_layer.h"
-#include "neural/loss/squared_error_loss.h"
+#include "neural/loss/mean_squared_error_loss.h"
 
 #include <math.h>
 
@@ -39,15 +39,15 @@ float CalcAccuracy(
     {
         TMutableTensorPtr l_input, l_output;
         a_testDataloader.DataAt(i, l_input, l_output);
-        float l_targetOutput = l_output->At({0,0});
+        size_t l_targetOutput = l_output->MaxIdx();
 
         // Forward pass
         TTensorPtr l_output0 = a_firstLayer.Forward(l_input);
         TTensorPtr l_output1 = a_secondLayer.Forward(l_output0);
         TTensorPtr l_predTensor = a_thirdLayer.Forward(l_output1);
-        float l_predVal = l_predTensor->At({0,0});
+        size_t l_predVal = l_predTensor->MaxIdx();
 
-        if (round(l_predVal) == l_targetOutput)
+        if (l_predVal == l_targetOutput)
         {
             l_numCorrect += 1.0;
         }
@@ -82,10 +82,10 @@ int main(int argc, char const *argv[])
     
     // second linear layer is 300x1
     // 300 hidden units, 1 output
-    LinearLayer secondLinearLayer(Tensor::Random({300, 1}, -0.01f, 0.01f));
+    LinearLayer secondLinearLayer(Tensor::Random({300, 10}, -0.01f, 0.01f));
 
     // Error function
-    SquaredErrorLoss loss;
+    MeanSquaredErrorLoss loss;
 
     // Training loop
     float learningRate = 0.0001;
@@ -95,35 +95,49 @@ int main(int argc, char const *argv[])
     {
         LOG(INFO) << "--EPOCH (" << i << ")--" << endl;
         vector<float> errorAcc;
+        size_t numCorrect = 0;
         for (size_t j = 0; j < numIters; ++j)
         {
             // Get training example
-            TMutableTensorPtr input, output;
-            l_trainDataloader.DataAt(j, input, output);
-            float targetOutput = output->At({0,0});
+            TMutableTensorPtr input, target;
+            l_trainDataloader.DataAt(j, input, target);
+            size_t targetOutput = target->MaxIdx();
 
             // Forward pass
             TTensorPtr output0 = firstLinearLayer.Forward(input);
             TTensorPtr output1 = activationLayer.Forward(output0);
             TTensorPtr y_pred = secondLinearLayer.Forward(output1);
-            float yPredVal = y_pred->At({0,0});
+
+            size_t yPredVal = y_pred->MaxIdx();
 
             // Calc Error
-            float error = loss.Forward(yPredVal, targetOutput);
+            float error = loss.Forward(y_pred, target);
             errorAcc.push_back(error);
 
+            if (yPredVal == targetOutput)
+            {
+                numCorrect += 1;
+            }
+
             // Only log every 1000 examples
+            // Backward pass
+            TTensorPtr errorGrad = loss.Backward(y_pred, target);
             if (j % 1000 == 0)
             {
                 float avgError = CalcAverage(errorAcc);
                 LOG(INFO) << "--ITER (" << i << "," << j << ")-- avgError = " << avgError << " lr = " << learningRate << endl;
+                for (size_t k = 0; k < y_pred->Shape().at(1); ++k)
+                {
+                    LOG(INFO) << "Output: " << y_pred->At({0, k}) << " Target " << target->At({0, k}) << endl;
+                }
                 LOG(INFO) << "Got prediction: " << yPredVal << " for target " << targetOutput << endl;
+                float accuracy = ((float) numCorrect / (float) errorAcc.size()) * 100;
+                LOG(INFO) << "Train accuracy: " << accuracy << endl;
+                numCorrect = 0;
                 errorAcc.clear();
             }
 
-            // Backward pass
-            float errorGrad = loss.Backward(yPredVal, targetOutput);
-            TTensorPtr y_predGrad = secondLinearLayer.Backward(output1, Tensor::New({1,1}, {errorGrad}));
+            TTensorPtr y_predGrad = secondLinearLayer.Backward(output1, errorGrad);
             TTensorPtr grad1 = activationLayer.Backward(output0, y_predGrad);
             TTensorPtr grad0 = firstLinearLayer.Backward(input, grad1);
 

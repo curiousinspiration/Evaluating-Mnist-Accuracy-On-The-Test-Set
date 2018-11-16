@@ -87,6 +87,9 @@ public:
     // Get index of maximum value from tensor
     size_t MaxIdx() const;
 
+    // Test if tensors have same shape
+    bool HasSameShape(const TTensorPtr& a_other) const;
+
     Tensor& operator-=(const float& a_val)
     {
         for (size_t i = 0; i < m_data.size(); ++i)

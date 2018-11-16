@@ -53,10 +53,20 @@ TEST(MNISTDataloaderTest, TestDataAt)
         
         // Just the singular value
         EXPECT_EQ(1, l_output->Shape().at(0));
-        EXPECT_EQ(1, l_output->Shape().at(1));
+        EXPECT_EQ(10, l_output->Shape().at(1));
 
         // first image is a 5
-        EXPECT_EQ(5.0f, l_output->At({0, 0}));
+        for (size_t i = 0; i < l_output->Shape().at(1); ++i)
+        {
+            if (5 == i)
+            {
+                EXPECT_EQ(1.0f, l_output->At({0, i}));
+            }
+            else
+            {
+                EXPECT_EQ(0.0f, l_output->At({0, i}));
+            }
+        }
     }
 
     {
@@ -77,9 +87,19 @@ TEST(MNISTDataloaderTest, TestDataAt)
         
         // Just the singular value
         EXPECT_EQ(1, l_output->Shape().at(0));
-        EXPECT_EQ(1, l_output->Shape().at(1));
+        EXPECT_EQ(10, l_output->Shape().at(1));
 
-        // third image is a ...
-        EXPECT_EQ(4.0f, l_output->At({0, 0}));
+        // third image is a 4
+        for (size_t i = 0; i < l_output->Shape().at(1); ++i)
+        {
+            if (4 == i)
+            {
+                EXPECT_EQ(1.0f, l_output->At({0, i}));
+            }
+            else
+            {
+                EXPECT_EQ(0.0f, l_output->At({0, i}));
+            }
+        }
     }
 }

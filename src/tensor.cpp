@@ -242,5 +242,23 @@ size_t Tensor::MaxIdx() const
     return l_maxIdx;
 }
 
+bool Tensor::HasSameShape(const TTensorPtr& a_other) const
+{
+    const vector<size_t>& l_otherShape = a_other->Shape();
+    if (m_shape.size() != l_otherShape.size())
+    {
+        return false;
+    }
+
+    for (size_t i = 0; i < l_otherShape.size(); ++i)
+    {
+        if (m_shape.at(i) != l_otherShape.at(i))
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
 
 } // namespace neural
